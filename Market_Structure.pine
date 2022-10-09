@@ -1,0 +1,228 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Kayden_Keiden
+//@version=5
+
+indicator(title = "Market Structure", overlay = true)
+
+
+// variables
+
+var string trendDirection = na
+var string waveLeg = na
+
+var float trendHigh = na
+var int trendhighTime = na
+
+var float trendLow = na
+var int trendlowTime = na
+
+var float[] previousCandle = na
+var int previouscandleTime = na
+
+var float[] firstCandle = na
+var int firstcandletime = na
+
+var bool trendnotEstablished = na
+var int retracement_count = 0
+var int impulse_count = 0
+
+var bool highs_lows = input.bool(defval = true, title = "Highs and lows lines", group = "Market Structure")
+var bool boslines = input.bool(defval =  true, title = "Break of structure", group = "Market Structure") 
+
+// functions
+
+highestPrice(length) =>
+    price = high
+    _time = time
+
+    for i = 1 to length
+        if high[i] > price
+            price := high[i]
+            _time := time[i]
+
+    [price, _time]
+
+
+lowestPrice(length) =>
+    price = low
+    _time = time
+
+    for i = 1 to length
+        if low[i] < price
+            price := low[i]
+            _time := time[i]
+
+    [price, _time]
+
+
+legLine(time1, point1, time2, point2) =>
+    line = line.new(x1 = time1, y1 = point1, x2 = time2, y2 = point2, xloc =  xloc.bar_time, color = #787b86)
+    line
+
+
+bosLine(time1, time2, point) =>
+    line = line.new(x1 = time1, y1 = point, x2 = time2, y2 = point, xloc =  xloc.bar_time, color = #787b86)
+    line
+
+
+bosLabel(time1, time2, point) =>
+    _time = (time2 + time1) / 2
+    label = label.new(x = _time, y =  point, text = "bos", xloc =  xloc.bar_time, yloc =  yloc.price, color = color.new(color = color.red, transp = 100) , textcolor = #787b86, textalign = text.align_center)
+    label
+
+
+[Rlow, Rtime] = lowestPrice(retracement_count)
+[Rhigh, Rtime2] = highestPrice(retracement_count)
+
+[Ilow, Itime] = lowestPrice(impulse_count)
+[Ihigh, Itime2] = highestPrice(impulse_count)
+
+// logic
+
+if barstate.ishistory
+
+    if barstate.isfirst
+
+        if close > open
+            trendDirection := "uptrend"
+            waveLeg := "impulse"
+            trendLow := low
+            trendlowTime := time
+            previousCandle := array.from(open, high, low, close)
+            previouscandleTime := time
+            impulse_count := impulse_count + 1
+
+        else if close < open
+            trendDirection := "downtrend"
+            waveLeg := "impulse"
+            trendHigh := high
+            trendhighTime := time
+            previousCandle := array.from(open, high, low, close)
+            previouscandleTime := time
+            impulse_count := impulse_count + 1
+
+        else if close == open
+            firstCandle := array.from(open, high, low, close)
+            firstcandletime := time
+            trendnotEstablished := true
+
+
+    else if trendnotEstablished
+        if close > open
+            trendDirection := "uptrend"
+            waveLeg := "impulse"
+            trendLow := array.get(id = firstCandle, index = 2)
+            trendlowTime := firstcandletime
+            previousCandle := array.from(open, high, low, close)
+            previouscandleTime := time
+            trendnotEstablished := false
+            impulse_count := impulse_count + 1
+
+        else if close < open
+            trendDirection := "downtrend"
+            waveLeg := "impulse"
+            trendHigh := array.get(id = firstCandle, index = 1)
+            trendhighTime := firstcandletime
+            previousCandle := array.from(open, high, low, close)
+            previouscandleTime := time
+            trendnotEstablished := false
+            impulse_count := impulse_count + 1
+
+    else
+        OPEN = array.get(id = previousCandle, index = 0)
+        HIGH = array.get(id = previousCandle, index = 1)
+        LOW = array.get(id = previousCandle, index = 2)
+        CLOSE = array.get(id = previousCandle, index = 3)
+
+        if trendDirection == "uptrend"
+            if waveLeg == "impulse"
+                if high > HIGH and close > LOW
+                    previousCandle := array.from(open, high, low, close)
+                
+                else if close < LOW
+                    waveLeg := "retracement"
+                    trendHigh := Ihigh > high ? Ihigh : high
+                    trendhighTime := Ihigh > high ? Itime2 : time
+                    if highs_lows
+                        legLine(trendlowTime, trendLow, trendhighTime, trendHigh)
+                    impulse_count := 0
+                    retracement_count := retracement_count + 1
+            
+                else
+                    impulse_count := impulse_count + 1
+
+            else if waveLeg == "retracement"
+                if close > trendHigh
+                    waveLeg := "impulse"
+                    trendLow := Rlow
+                    trendlowTime := Rtime
+                    if highs_lows
+                        legLine(trendhighTime, trendHigh, trendlowTime, trendLow)
+                    if boslines
+                        bosLine(trendhighTime, time, trendHigh)
+                        bosLabel(trendhighTime, time, trendHigh)
+                    previousCandle := array.from(open, high, low, close)
+                    previouscandleTime := time
+                    retracement_count := 0
+                    impulse_count := impulse_count + 1
+
+                else if close < trendLow
+                    trendDirection := "downtrend"
+                    waveLeg := "impulse"
+                    if boslines
+                        bosLine(trendlowTime, time, trendLow)
+                        bosLabel(trendlowTime, time, trendLow)
+                    previousCandle := array.from(open, high, low, close)
+                    previouscandleTime := time
+                    retracement_count := 0
+                    impulse_count := impulse_count + 1
+                
+                else
+                    retracement_count := retracement_count + 1
+
+        if trendDirection == "downtrend"
+            if waveLeg == "impulse"
+                if low < LOW and close < HIGH
+                    previousCandle := array.from(open, high, low, close)
+                
+                else if close > HIGH
+                    waveLeg := "retracement"
+                    trendLow := Ilow < low ? Ilow : low
+                    trendlowTime := Ilow < low ? Itime : time
+                    if highs_lows
+                        legLine(trendhighTime, trendHigh, trendlowTime, trendLow)
+                    impulse_count := 0
+                    retracement_count := retracement_count + 1
+                
+                else
+                    impulse_count := impulse_count + 1
+
+            else if waveLeg == "retracement"
+                if close < trendLow
+                    waveLeg := "impulse"
+                    trendHigh := Rhigh
+                    trendhighTime := Rtime2
+                    if highs_lows
+                        legLine(trendlowTime, trendLow, trendhighTime, trendHigh)
+                    if boslines
+                        bosLine(trendlowTime, time, trendLow)
+                        bosLabel(trendlowTime, time, trendLow)
+                    previousCandle := array.from(open, high, low, close)
+                    previouscandleTime := time
+                    retracement_count := 0
+                    impulse_count := impulse_count + 1
+
+                else if close > trendHigh
+                    trendDirection := "uptrend"
+                    waveLeg := "impulse"
+                    if boslines
+                        bosLine(trendhighTime, time, trendHigh)
+                        bosLabel(trendhighTime, time, trendHigh)
+                    previousCandle := array.from(open, high, low, close)
+                    previouscandleTime := time
+                    retracement_count := 0
+                    impulse_count := impulse_count + 1
+                
+                else
+                    retracement_count := retracement_count + 1
+
