@@ -51,5 +51,3 @@ The core logic of the script is executed when a new historical bar is encountere
 - The script keeps track of impulse and retracement counts and adjusts trend direction and wave leg as necessary.
 
 Please note that this script is designed for use in the TradingView platform and is primarily intended for technical analysis and visualizing market structure on price charts. Users can customize input options to tailor it to their trading strategies.
-
-Understanding the script and its behavior is crucial before using it for trading, and users may need to modify it to suit their specific trading scenarios.
