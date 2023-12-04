@@ -49,5 +49,3 @@ The core logic of the script is executed when a new historical bar is encountere
 - When a retracement phase is identified, the script plots high and low lines (if specified by the user) and checks for break of structure conditions. If a BOS occurs, it plots BOS lines and labels.
 
 - The script keeps track of impulse and retracement counts and adjusts trend direction and wave leg as necessary.
-
-Please note that this script is designed for use in the TradingView platform and is primarily intended for technical analysis and visualizing market structure on price charts. Users can customize input options to tailor it to their trading strategies.
