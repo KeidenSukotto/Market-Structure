@@ -49,3 +49,6 @@ The core logic of the script is executed when a new historical bar is encountere
 - When a retracement phase is identified, the script plots high and low lines (if specified by the user) and checks for break of structure conditions. If a BOS occurs, it plots BOS lines and labels.
 
 - The script keeps track of impulse and retracement counts and adjusts trend direction and wave leg as necessary.
+
+
+**Disclaimer:** This script is provided for educational purposes and does not constitute financial advice. Use it responsibly and at your own risk when trading or investing.
